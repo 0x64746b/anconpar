@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.Menu;
+import android.widget.Toast;
 
 public class ParserActivity extends Activity {
 
@@ -20,33 +21,32 @@ public class ParserActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		String query = getIntent().getData().getQuery();
-		if (query.startsWith(QUERY_PREFIX)) {
-			String location = query.substring(QUERY_PREFIX.length()).trim();
-			String[] components = location.split(",", 4);
-			int lastComponent = components.length >= 3 ? 2 : (components.length - 1);
+		Intent intent = getIntent();
+		String scheme = intent.getScheme();
+		String type = intent.getType();
 
-			Intent addContact = new Intent(Intent.ACTION_INSERT);
-			addContact.setType(ContactsContract.Contacts.CONTENT_TYPE);
-
-			for (int line = 0; line <= lastComponent; line++) {
-				categorizeLine(components[line].trim(), addContact);
+		if (scheme != null && scheme.equals("geo")) {
+			String query = intent.getData().getQuery();
+			if (query.startsWith(QUERY_PREFIX)) {
+				String location = query.substring(QUERY_PREFIX.length()).trim();
+				createNewContact(location);
+			} else {
+				String problem = String.format("Error: Found invalid query: %s", query);
+				Toast.makeText(this, problem, Toast.LENGTH_LONG).show();
+				Log.e(CLASS, problem);
 			}
-
-			if (components.length >= 4) {
-				String[] notes = components[3].split(",");
-				for (String note : notes) {
-					addNote(note.trim(), addContact);
-				}
-			}
-
-			startActivity(addContact);
-
-			Log.d(CLASS, "Done");
-			finish();
+		} else if (type != null && type.equals("text/plain")){
+			String location = intent.getStringExtra(Intent.EXTRA_TEXT);
+			createNewContact(location);
 		} else {
-			Log.e(CLASS, String.format("Error: Found invalid query: %s", query));
+			String problem = String.format("Error: Found invalid intent of scheme '%s' and type '%s'",
+					                       intent.getScheme(), intent.getType());
+			Toast.makeText(this, problem, Toast.LENGTH_LONG).show();
+			Log.e(CLASS, problem);
 		}
+
+		Log.d(CLASS, "Done");
+		finish();
 }
 
 	@Override
@@ -54,6 +54,29 @@ public class ParserActivity extends Activity {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.layout_parser, menu);
 		return true;
+	}
+
+	private void createNewContact(String location) {
+
+		String[] components = location.split("," , 4);
+		int lastComponent = components.length >= 3 ? 2 : (components.length - 1);
+
+		Intent addContact = new Intent(Intent.ACTION_INSERT);
+		addContact.setType(ContactsContract.Contacts.CONTENT_TYPE);
+
+		for (int line = 0; line <= lastComponent; line++) {
+			categorizeLine(components[line].trim(), addContact);
+		}
+
+		if (components.length >= 4) {
+			String[] notes = components[3].split(",");
+			for (String note : notes) {
+				addNote(note.trim(), addContact);
+			}
+		}
+
+		startActivity(addContact);
+
 	}
 
 	private void categorizeLine(String line, Intent contact) {
