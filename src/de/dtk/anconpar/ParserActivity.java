@@ -14,8 +14,10 @@ public class ParserActivity extends Activity {
 
 	private static final String QUERY_PREFIX = "q=";
 
+	private static final String DELIMITER = ",";
 	private static final String STREET_FORMAT = "\\p{L}[\\p{L}- ]+[0-9]+";
 	private static final String CITY_FORMAT = "[0-9]{4,5} +\\p{L}[\\p{L}- ]+";
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -57,8 +59,9 @@ public class ParserActivity extends Activity {
 	}
 
 	private void createNewContact(String location) {
+		String delimiter = location.contains("\n") ? "\n" : DELIMITER;
 
-		String[] components = location.split("," , 4);
+		String[] components = location.split(delimiter, 4);
 		int lastComponent = components.length >= 3 ? 2 : (components.length - 1);
 
 		Intent addContact = new Intent(Intent.ACTION_INSERT);
@@ -69,7 +72,7 @@ public class ParserActivity extends Activity {
 		}
 
 		if (components.length >= 4) {
-			String[] notes = components[3].split(",");
+			String[] notes = components[3].split(delimiter);
 			for (String note : notes) {
 				addNote(note.trim(), addContact);
 			}
