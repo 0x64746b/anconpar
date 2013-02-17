@@ -2,7 +2,7 @@
 <resources>
 
     <string name="app_name">Anconpar</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="intent_title">To Contact</string>
     <string name="menu_settings">Settings</string>
 
 </resources>
