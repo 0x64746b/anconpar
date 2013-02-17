@@ -59,37 +59,29 @@ public class ParserActivity extends Activity {
 	}
 
 	private void createNewContact(String location) {
-		String delimiter = location.contains("\n") ? "\n" : DELIMITER;
-
-		String[] components = location.split(delimiter, 4);
-		int lastComponent = components.length >= 3 ? 2 : (components.length - 1);
-
 		Intent addContact = new Intent(Intent.ACTION_INSERT);
 		addContact.setType(ContactsContract.Contacts.CONTENT_TYPE);
 
-		for (int line = 0; line <= lastComponent; line++) {
-			categorizeLine(components[line].trim(), addContact);
-		}
+		String delimiter = location.contains("\n") ? "\n" : DELIMITER;
 
-		if (components.length >= 4) {
-			String[] notes = components[3].split(delimiter);
-			for (String note : notes) {
-				addNote(note.trim(), addContact);
-			}
+		String[] components = location.split(delimiter);
+
+		for (String component: components) {
+			categorizeComponent(component.trim(), addContact);
 		}
 
 		startActivity(addContact);
 
 	}
 
-	private void categorizeLine(String line, Intent contact) {
-		Log.d(CLASS, String.format("categorizing '%s'", line));
-		if (line.matches(STREET_FORMAT) || line.matches(CITY_FORMAT)) {
-			Log.d(CLASS, "    is street or city");
-			addAddressInfo(line, contact);
+	private void categorizeComponent(String component, Intent contact) {
+		Log.d(CLASS, String.format("categorizing '%s'", component));
+		if (component.matches(STREET_FORMAT) || component.matches(CITY_FORMAT)) {
+			Log.d(CLASS, "\tis street or city");
+			addAddressInfo(component, contact);
 		} else {
-			Log.d(CLASS, "    is not part of the address");
-			addName(line, contact);
+			Log.d(CLASS, "\tis unstructured data");
+			addUnstructuredData(component, contact);
 		}
 	}
 
@@ -101,25 +93,17 @@ public class ParserActivity extends Activity {
 		contact.putExtra(addressKey, address);
 	}
 
-	private void addName(String name, Intent contact) {
+	private void addUnstructuredData(String date, Intent contact) {
 		String nameKey = ContactsContract.Intents.Insert.NAME;
 		String notesKey = ContactsContract.Intents.Insert.NOTES;
 
 		if (!contact.hasExtra(nameKey)) {
-			contact.putExtra(nameKey, name);
+			contact.putExtra(nameKey, date);
 		} else {
 			String notes = getExistingValue(notesKey, contact);
-			notes += name;
+			notes += date;
 			contact.putExtra(notesKey, notes);
 		}
-	}
-
-	private void addNote(String note, Intent contact) {
-		String notesKey = ContactsContract.Intents.Insert.NOTES;
-		String notes = getExistingValue(notesKey, contact);
-
-		notes += note;
-		contact.putExtra(notesKey, notes);
 	}
 
 	private String getExistingValue(String key, Intent contact) {
